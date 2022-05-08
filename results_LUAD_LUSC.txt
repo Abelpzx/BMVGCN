@@ -1,0 +1,1 @@
+total_epoch: 85	 test_acc:0.897000 	 test_f1:0.897000	 test_auc:0.934000 	 test_recall:0.897000	 test_precision:0.904000	 

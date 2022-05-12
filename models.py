@@ -62,7 +62,7 @@ class GCN_E(nn.Module):
 def get_sizes_list(dim, chunks):
     split_size = (dim + chunks - 1) // chunks
     sizes_list = [split_size] * chunks
-    sizes_list[-1] = sizes_list[-1] - (sum(sizes_list) - dim) # Adjust last
+    sizes_list[-1] = sizes_list[-1] - (sum(sizes_list) - dim)
     assert sum(sizes_list) == dim
     if sizes_list[-1]<0:
         n_miss = sizes_list[-2] - sizes_list[-1]
@@ -107,7 +107,6 @@ class Block(nn.Module):
         self.dropout_output = dropout_output
         assert(pos_norm in ['before_cat', 'after_cat'])
         self.pos_norm = pos_norm
-        # Modules
         self.linear0 = nn.Linear(input_dims[0], mm_dim)
         if shared:
             self.linear1 = self.linear0
@@ -144,7 +143,7 @@ class Block(nn.Module):
                                     self.merge_linears1):
             x0_c = x0_chunks[chunk_id]
             x1_c = x1_chunks[chunk_id]
-            m = m0(x0_c) * m1(x1_c) # bsize x split_size*rank
+            m = m0(x0_c) * m1(x1_c)
             m = m.view(bsize, self.rank, -1)
             z = torch.sum(m, 1)
             if self.pos_norm == 'before_cat':

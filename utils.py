@@ -7,20 +7,14 @@ cuda = True if torch.cuda.is_available() else False
 
 
 def set_seed(seed=0):
-    torch.manual_seed(seed)  # 为CPU设置随机种子
-    torch.cuda.manual_seed(seed)  # 为当前GPU设置随机种子
-    torch.cuda.manual_seed_all(seed)  # 为所有GPU设置随机种子
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
     random.seed(seed)
     np.random.seed(seed)
 
 def train_test_split(data_index_slice,train_scale):
-    '''
 
-    :param data_index_slice:含有所有数据序号的list
-    :param train_scale: 训练集比例
-    :param random_seed: 测试集比例
-    :return:
-    '''
     num = len(data_index_slice)
     num_train = int(train_scale*num)
     train_index = np.array(random.sample(data_index_slice,num_train))
@@ -31,14 +25,13 @@ def train_test_split(data_index_slice,train_scale):
 def cal_sample_weight(labels, num_class, use_sample_weight=True):
     if not use_sample_weight:
         return np.ones(len(labels)) / len(labels)
-    count = np.zeros(num_class)    # 含有某个标签的样本数
+    count = np.zeros(num_class)
     for i in range(num_class):
         count[i] = np.sum(labels==i)
     sample_weight = np.zeros(labels.shape)
     for i in range(num_class):
         sample_weight[np.where(labels==i)[0]] = count[i]/np.sum(count)
 
-    # 返回的是这个样本的标签在整个样本中的总数与所有样本数的比例
     return sample_weight
 
 def one_hot_tensor(y, num_dim):
@@ -53,9 +46,7 @@ def one_hot_tensor(y, num_dim):
     
     return y_onehot
 
-# def cosine_distance_torch(x1, x2=None, eps=1e-8):
-#     pdist = torch.nn.PairwiseDistance(p=2)
-#     return pdist(x1,x2)
+
 def cosine_distance_torch(x1, x2=None, eps=1e-8):
     x2 = x1 if x2 is None else x2
     w1 = x1.norm(p=2, dim=1, keepdim=True)
@@ -63,35 +54,19 @@ def cosine_distance_torch(x1, x2=None, eps=1e-8):
     temp = 1 - torch.mm(x1, x2.t()) / (w1 * w2.t()).clamp(min=eps)
     return temp
 
-# def cosine_distance_torch(x1, x2=None, eps=1e-8):
-#     pdist = torch.nn.PairwiseDistance(p=2)
-#     #     return pdist(x1,x2)
-#     num1 = x1.shape[0]
-#     x2 = x1 if x2 is None else x2
-#     num2 = x2.shape[0]
-#     matrix = torch.zeros((num1,num2))
-#     if torch.cuda.is_available():
-#         matrix = matrix.cuda()
-#     for i in range(num1):
-#         for j in range(num2):
-#             a = x1[i][:]
-#             b = x2[j][:]
-#             matrix[i][j] = torch.pow(a-b,2).sum()
-#
-#
-#     return matrix
+
 
 def to_sparse(x):
     x_typename = torch.typename(x).split('.')[-1]
     sparse_tensortype = getattr(torch.sparse, x_typename)
     indices = torch.nonzero(x)
-    if len(indices.shape) == 0:  # if all elements are zeros
+    if len(indices.shape) == 0:
         return sparse_tensortype(*x.shape)
     indices = indices.t()
     values = x[tuple(indices[i] for i in range(indices.shape[0]))]
     return sparse_tensortype(indices, values, x.size())
 
-def cal_adj_mat_parameter(edge_per_node, data,eps, metric="cosine"): #
+def cal_adj_mat_parameter(edge_per_node, data,eps, metric="cosine"):
     assert metric == "cosine", "Only cosine distance implemented"
     dist = cosine_distance_torch(data, data,eps=eps)
     parameter = torch.sort(dist.reshape(-1,)).values[edge_per_node*data.shape[0]]
@@ -148,7 +123,7 @@ def gen_test_adj_mat_tensor(data, trte_idx, parameter, eps,metric="cosine"):
         adj[num_tr:,:num_tr] = 1-dist_te2tr
     else:
         raise NotImplementedError
-    adj[num_tr:,:num_tr] = adj[num_tr:,:num_tr]*g_te2tr # retain selected edges
+    adj[num_tr:,:num_tr] = adj[num_tr:,:num_tr]*g_te2tr
     
     adj_T = adj.transpose(0,1)
     I = torch.eye(adj.shape[0])
@@ -182,7 +157,7 @@ def gen_test_adj_mat_tensor(data_train,data_test, parameter, eps,metric="cosine"
         adj[num_tr:, :num_tr] = 1 - dist_te2tr
     else:
         raise NotImplementedError
-    adj[num_tr:, :num_tr] = adj[num_tr:, :num_tr] * g_te2tr  # retain selected edges
+    adj[num_tr:, :num_tr] = adj[num_tr:, :num_tr] * g_te2tr
 
     adj_T = adj.transpose(0, 1)
     I = torch.eye(adj.shape[0])
